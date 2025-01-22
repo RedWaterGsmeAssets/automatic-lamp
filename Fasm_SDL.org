@@ -1,0 +1,98 @@
+#+TITLE: FASM SDL CREATE WINDOW
+#+AUTHOR: Justin Blacksher
+* INDEX
+1. [[SDL_CreateWindow]] SDL_CreatwWindiw
+2. [[SDL_PollEvent]] SDL_PollEvent
+
+
+
+*  TODO SDL and FASM CreateWindow
+:PROPERTIES:
+:ID: FSW001
+:END:
+
+**  TODO Finish Elf64 requirements
+**  TODO Finish File setup
+
+#+NAME: SDL_CreateWindow
+#+BEGIN_SRC asm result: output
+
+  ; SDL WINDOW and parameters
+  ; SDL_WINDOW * SDL_CreateWindow(const char *title, int w, int h, SDL_WindowFlags flags);  
+  ; C style cdecl needs to have stack built left to right 
+  ; SDL_WindowFags need to be or'd together 
+  SDL_WINDOW_RESIZABLE equ 0x00000020 ; Flag for resizable window
+  SDL_WINDOW_OPENGL    equ 0x00000002 ; Flag to use opengl with window
+  SDL_HIGH_BITS        equ 0x00000000 ; High bits for 64 bit 
+
+  ; Need to OR the flags together
+  mov eax, SDL_WINDOW_RESIZABLE
+  or eax, SDL_WINDOW_OPENGL
+  
+  ; Push the args onto the stack
+  push SDL_HIGH_BITS 		; high bits first
+  push eax           		; OR flags combined
+  push 0x0320        		; Screen Height 600
+  push 0x0258        		; Screen Width 800
+  push title         		; Title of the screen
+  call [SDL_CreateWindow]	; Call SDL_CreateWindow from SDL3
+  
+  ; SDL_CreateWindow returns a pointer to that window
+  mov [window_ptr], eax    ; Storing that pointer in eax
+
+; DATA section to declare variables
+section '.data' data readable writable
+  title db 'SDL Window Bitch', 0
+  window_pointer dd 0
+
+ #+END_SRC
+** SDL  Explanation for window creation
+	-  Flags are 64 bit and need to have the lower bits stored in 32 bit registers and then an OR operation performed.
+ -  Store the high bits 0x00000000 and push them first onto the stack as 32 bits
+ -  Store the lower bits from the OR operation on the flags and push them onto the stack
+ -  Push the screen height noto the stack 
+ -  Push the screen width onto the stack
+ -  Push the title of the window to the stack
+ -  Call the SDL_CreateWindow function
+-  SDL_CreateWindow function will return a pointer to that window 
+
+* TODO  SDL POLL EVENT
+:PROPERTIES:
+:ID: FSW002
+:END:
+
+** TODO SDL_PollEvent
+
+#+NAME:  SDL_PollEvent
+#+BEGIN_SRC asm result: output
+; bool SDL_PollEvent(SDL_Event *Event)
+; Returns a bool 
+; Argument is a pointer to an event Structure
+; First we need to call the SDL_PollEvent Function
+push event_ptr			; Push event pointer onto the stack
+call [SDL_PollEvent]	; Call the SDL_PollEvent Function
+
+; Check the return value with test
+test eax, eax				; Test eax with eax for non zero value
+jz no_event  				; Jump if return is 0 (False)
+; Add event handling code here
+
+no_event:
+; No event was polled. Add code here
+
+; Data Section
+section '.data' data readable writable
+event_ptr rb 56
+
+#+END_SRC
+
+*** SDL_PollEvent Explanation
+- Arguments pushed to the stack first.
+- SDL_Event *Event is a pointer to an event structure
+-  Call SDL_PollEvent returns 0 or 1 (F or T)
+-  Test the eax register for zero value using test ip code
+-  Jump to no_event if not zero
+-  If event detected then add code to handle the event
+-  If zero jump to no_event and handle the rest of the execution path
+-  Data needed in this section is just space reserved for the event_ptr
+
